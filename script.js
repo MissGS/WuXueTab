@@ -9,6 +9,16 @@ let engines = JSON.parse(localStorage.getItem("engines")) || {
 // 当前选中的搜索引擎，默认为必应
 let currentEngine = localStorage.getItem("currentEngine") || "必应";
 
+// 一言设置
+
+// 加载配置文件
+let config = JSON.parse(localStorage.getItem("config")) || {
+    hitokotoEnabled: true,
+    hitokotoDragEnabled: true,
+    searchBoxPosition: null,
+    hitokotoPosition: null
+};
+
 // ---------- 元素 ----------
 // 获取页面中的各种DOM元素引用
 const overlay = document.getElementById("overlay");                      // 遮罩层
@@ -20,6 +30,8 @@ const searchBtn = document.getElementById("searchBtn");                  // 搜�
 const currentEngineBtn = document.getElementById("currentEngineBtn");    // 当前搜索引擎按钮
 const closeSettings = document.getElementById("closeSettings");          // 关闭设置按钮
 const currentBgPreview = document.getElementById("currentBgPreview");    // 当前背景预览
+const hitokotoBox = document.getElementById("hitokotoBox");              // 每日一言容器
+const hitokotoText = document.getElementById("hitokotoText");            // 每日一言文本
 
 const enginePopup = document.getElementById("enginePopup");              // 搜索引擎选择弹窗
 const popupEngineList = document.getElementById("popupEngineList");      // 弹窗中的搜索引擎列表
@@ -34,6 +46,36 @@ const defaultGroupContent = document.getElementById("defaultGroupContent"); // �
 
 // 用于跟踪待删除的搜索引擎
 let engineToDelete = null;
+
+// ---------- 性能优化 ----------
+// 缓存常用DOM元素
+let cachedElements = {};
+
+// 优化的防抖函数
+function debounce(func, wait) {
+    let timeout = null;
+    return function(...args) {
+        const later = () => {
+            timeout = null;
+            func.apply(this, args);
+        };
+        if (timeout) clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// 缓存的窗口尺寸
+let windowHeight = window.innerHeight;
+let windowWidth = window.innerWidth;
+
+// 更新缓存尺寸
+function updateWindowSize() {
+    windowHeight = window.innerHeight;
+    windowWidth = window.innerWidth;
+}
+
+// 监听窗口尺寸变化
+window.addEventListener('resize', debounce(updateWindowSize, 100));
 
 // ---------- 分组管理 ----------
 // 为默认搜索引擎分组添加展开/折叠功能
@@ -108,6 +150,9 @@ function initSettingsPanel() {
             categoryItem.classList.add('active');
         }
     });
+    
+    // 设置每日一言开关状态 - 同步config中的设置
+    document.getElementById('hitokotoTogglePanel').checked = config.hitokotoEnabled;
 }
 
 // 绑定各种事件处理器
@@ -261,18 +306,13 @@ refreshCurrentEngineBtn();
 function doSearch(){
     // 检查搜索关键字是否为空
     const searchTerm = searchInput.value.trim();
-    console.log("搜索关键字:", searchTerm);
     if (!searchTerm) {
-        console.log("搜索关键字为空");
         alert("请输入搜索关键字");
         return;
     }
     
     // 检查当前引擎是否存在
-    console.log("当前引擎:", currentEngine);
-    console.log("所有引擎:", engines);
     if (!engines[currentEngine]) {
-        console.error("当前选择的搜索引擎不存在:", currentEngine);
         alert("当前搜索引擎配置有误");
         return;
     }
@@ -280,11 +320,10 @@ function doSearch(){
     try {
         const encodedSearchTerm = encodeURIComponent(searchTerm);
         const url = engines[currentEngine].replace("%s", encodedSearchTerm);
-        console.log("正在跳转到:", url);
         window.location.href = url;
     } catch (error) {
         console.error("搜索过程中发生错误:", error);
-        alert("搜索过程出现错误，请查看控制台了解详情");
+        alert("搜索过程出现错误");
     }
 }
 
@@ -294,15 +333,6 @@ searchInput.onkeydown = e => {
         e.preventDefault(); // 阻止表单默认提交行为
         doSearch(); 
     }
-};
-
-// 添加输入框焦点处理，方便用户看到输入状态
-searchInput.onfocus = () => {
-    console.log("搜索框获得焦点");
-};
-
-searchInput.onblur = () => {
-    console.log("搜索框失去焦点");
 };
 
 // 为搜索输入框添加专门的点击事件处理程序
@@ -430,6 +460,28 @@ async function fetchDailyBg(){
 }
 fetchDailyBg();
 
+// 将每日一言定位在搜索框下方
+function positionHitokotoBelowSearch() {
+    // 只有当每日一言处于非拖拽状态时才自动定位
+    if (!config.hitokotoDragEnabled || hitokotoBox.style.display === 'none') return;
+    
+    // 获取搜索框的位置信息
+    const searchRect = searchBox.getBoundingClientRect();
+    const newTop = searchRect.bottom + 20; // 搜索框下方20px
+    
+    hitokotoBox.style.top = newTop + "px";
+    hitokotoBox.style.left = "50%";
+    hitokotoBox.style.transform = "translateX(-50%)";
+    
+    // 保存位置
+    config.hitokotoPosition = {
+        top: hitokotoBox.style.top,
+        left: hitokotoBox.style.left,
+        transform: hitokotoBox.style.transform
+    };
+    localStorage.setItem('config', JSON.stringify(config));
+}
+
 // 页面加载时尝试恢复保存的背景
 document.addEventListener('DOMContentLoaded', () => {
     const savedBg = localStorage.getItem('customBackground');
@@ -439,16 +491,41 @@ document.addEventListener('DOMContentLoaded', () => {
     // 初始化预览
     updateCurrentBgPreview();
     
-    // 恢复搜索框位置
-    const savedPos = localStorage.getItem('searchBoxPosition');
-    if (savedPos) {
-        const pos = JSON.parse(savedPos);
+    // 检查是否有保存的搜索框位置
+    if (config.searchBoxPosition) {
+        const pos = config.searchBoxPosition;
         searchBox.style.top = pos.top;
         searchBox.style.left = pos.left;
+        searchBox.style.transform = pos.transform;
     } else {
-        searchBox.style.top = "40%";
+        // 设置搜索框居中位置（水平居中，垂直50%）
+        searchBox.style.top = "50%";
         searchBox.style.left = "50%";
+        searchBox.style.transform = "translate(-50%, -50%)";
     }
+    
+    // 检查是否有保存的每日一言位置
+    if (config.hitokotoPosition) {
+        const pos = config.hitokotoPosition;
+        hitokotoBox.style.top = pos.top;
+        hitokotoBox.style.left = pos.left;
+        hitokotoBox.style.transform = pos.transform;
+    } else {
+        // 设置每日一言在搜索框下方居中
+        hitokotoBox.style.top = "calc(50% + 60px)";
+        hitokotoBox.style.left = "50%";
+        hitokotoBox.style.transform = "translate(-50%, -50%)";
+    }
+    
+    // 恢复设置选项 - 使用config中的设置
+    document.getElementById('hitokotoToggle').checked = config.hitokotoEnabled;
+    document.getElementById('hitokotoDragToggle').checked = config.hitokotoDragEnabled;
+    
+    // 根据设置显示/隐藏每日一言
+    toggleHitokotoDisplay();
+    
+    // 获取每日一言
+    fetchHitokoto();
 });
 
 // 上传背景图片
@@ -480,33 +557,224 @@ uploadInput.onchange=e=>{
     e.target.value = '';
 };
 
-// ---------- 搜索框垂直拖拽 ----------
-// 实现搜索框的拖拽功能
-let offsetY=0;
-searchBox.addEventListener("mousedown",e=>{
+// ---------- 优化的搜索框拖拽 ----------
+let isDraggingSearch = false;
+let searchOffsetX = 0;
+let searchOffsetY = 0;
+let initialSearchTop = 0;
+
+// 使用requestAnimationFrame优化拖拽性能
+function updateSearchBoxPosition(e) {
+    if (!isDraggingSearch) return;
+    
+    let newTop = e.clientY - searchOffsetY;
+    
+    // 限制在窗口范围内（只允许垂直移动）
+    newTop = Math.max(0, Math.min(windowHeight - searchBox.offsetHeight, newTop));
+    
+    // 保持水平居中
+    searchBox.style.top = newTop + "px";
+    searchBox.style.left = "50%";
+    searchBox.style.transform = "translate(-50%, 0)";
+    
+    // 保存位置（使用防抖减少存储频率）
+    debouncedSaveSearchPosition();
+}
+
+// 防抖保存位置
+const debouncedSaveSearchPosition = debounce(() => {
+    config.searchBoxPosition = {
+        top: searchBox.style.top,
+        left: searchBox.style.left,
+        transform: searchBox.style.transform
+    };
+    localStorage.setItem('config', JSON.stringify(config));
+}, 150);
+
+searchBox.addEventListener("mousedown", e => {
     // 如果点击的是输入框或按钮，不执行拖拽
     if (e.target === searchInput || e.target === searchBtn || e.target === currentEngineBtn) {
         return;
     }
     
     e.preventDefault();
-    offsetY=e.clientY-searchBox.getBoundingClientRect().top;
-    function move(e){
-        let newTop=e.clientY-offsetY;
-        newTop=Math.max(0,Math.min(window.innerHeight-searchBox.offsetHeight,newTop));
-        searchBox.style.top=newTop+"px";
-        searchBox.style.left="50%";
+    e.stopPropagation();
+    
+    isDraggingSearch = true;
+    const rect = searchBox.getBoundingClientRect();
+    searchOffsetX = e.clientX - rect.left;
+    searchOffsetY = e.clientY - rect.top;
+    initialSearchTop = rect.top;
+    searchBox.classList.add('dragging');
+    
+    function onMouseMove(e) {
+        if (!isDraggingSearch) return;
+        updateSearchBoxPosition(e);
+    }
+    
+    function onMouseUp() {
+        if (!isDraggingSearch) return;
+        isDraggingSearch = false;
+        searchBox.classList.remove('dragging');
+        document.removeEventListener("mousemove", onMouseMove);
+        document.removeEventListener("mouseup", onMouseUp);
+        document.removeEventListener("mouseleave", onMouseUp);
         
-        // 保存位置
-        localStorage.setItem('searchBoxPosition', JSON.stringify({
+        // 保存最终位置
+        config.searchBoxPosition = {
             top: searchBox.style.top,
-            left: searchBox.style.left
-        }));
+            left: searchBox.style.left,
+            transform: searchBox.style.transform
+        };
+        localStorage.setItem('config', JSON.stringify(config));
     }
-    function up(){
-        document.removeEventListener("mousemove",move);
-        document.removeEventListener("mouseup",up);
+    
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+    document.addEventListener("mouseleave", onMouseUp);
+});
+
+// ---------- 优化的每日一言拖拽 ----------
+let isDraggingHitokoto = false;
+let hitokotoOffsetX = 0;
+let hitokotoOffsetY = 0;
+let initialHitokotoTop = 0;
+
+function updateHitokotoPosition(e) {
+    if (!isDraggingHitokoto) return;
+    
+    let newTop = e.clientY - hitokotoOffsetY;
+    
+    newTop = Math.max(0, Math.min(windowHeight - hitokotoBox.offsetHeight, newTop));
+    
+    // 保持水平居中
+    hitokotoBox.style.top = newTop + "px";
+    hitokotoBox.style.left = "50%";
+    hitokotoBox.style.transform = "translate(-50%, 0)";
+    
+    // 保存位置
+    debouncedSaveHitokotoPosition();
+}
+
+// 防抖保存每日一言位置
+const debouncedSaveHitokotoPosition = debounce(() => {
+    config.hitokotoPosition = {
+        top: hitokotoBox.style.top,
+        left: hitokotoBox.style.left,
+        transform: hitokotoBox.style.transform
+    };
+    localStorage.setItem('config', JSON.stringify(config));
+}, 150);
+
+hitokotoBox.addEventListener("mousedown", e => {
+    // 如果禁用了拖拽功能，则不执行
+    if (!config.hitokotoDragEnabled) return;
+    
+    // 只有点击文本部分才允许拖拽
+    if (e.target === hitokotoText) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        isDraggingHitokoto = true;
+        const rect = hitokotoBox.getBoundingClientRect();
+        hitokotoOffsetX = e.clientX - rect.left;
+        hitokotoOffsetY = e.clientY - rect.top;
+        initialHitokotoTop = rect.top;
+        hitokotoBox.classList.add('dragging');
+        
+        function onMouseMove(e) {
+            if (!isDraggingHitokoto) return;
+            updateHitokotoPosition(e);
+        }
+        
+        function onMouseUp() {
+            if (!isDraggingHitokoto) return;
+            isDraggingHitokoto = false;
+            hitokotoBox.classList.remove('dragging');
+            document.removeEventListener("mousemove", onMouseMove);
+            document.removeEventListener("mouseup", onMouseUp);
+            document.removeEventListener("mouseleave", onMouseUp);
+            
+            // 保存最终位置
+            config.hitokotoPosition = {
+                top: hitokotoBox.style.top,
+                left: hitokotoBox.style.left,
+                transform: hitokotoBox.style.transform
+            };
+            localStorage.setItem('config', JSON.stringify(config));
+        }
+        
+        document.addEventListener("mousemove", onMouseMove);
+        document.addEventListener("mouseup", onMouseUp);
+        document.addEventListener("mouseleave", onMouseUp);
     }
-    document.addEventListener("mousemove",move);
-    document.addEventListener("mouseup",up);
+});
+
+// ---------- 每日一言功能 ----------
+/**
+ * 获取并显示每日一言
+ */
+async function fetchHitokoto() {
+    if (!config.hitokotoEnabled) return;
+    
+    try {
+        const res = await fetch("https://v1.hitokoto.cn/?encode=json&charset=utf-8");
+        if (res.ok) {
+            const data = await res.json();
+            hitokotoText.textContent = data.hitokoto;
+        } else {
+            hitokotoText.textContent = "获取失败，请稍后再试";
+        }
+    } catch (e) {
+        console.error(e);
+        hitokotoText.textContent = "网络错误，获取失败";
+    }
+}
+
+/**
+ * 切换每日一言显示状态
+ */
+function toggleHitokotoDisplay() {
+    if (config.hitokotoEnabled) {
+        hitokotoBox.style.display = "flex";
+        fetchHitokoto(); // 获取一言内容
+    } else {
+        hitokotoBox.style.display = "none";
+    }
+    
+    // 保存设置状态
+    localStorage.setItem("config", JSON.stringify(config));
+}
+
+// ---------- 设置面板事件监听 ----------
+// 监听每日一言开关
+document.getElementById('hitokotoToggle').addEventListener('change', function() {
+    config.hitokotoEnabled = this.checked;
+    localStorage.setItem("config", JSON.stringify(config));
+    toggleHitokotoDisplay();
+    
+    // 同步设置面板中的开关状态
+    document.getElementById('hitokotoTogglePanel').checked = this.checked;
+});
+
+// 监听设置面板中的每日一言开关
+document.getElementById('hitokotoTogglePanel').addEventListener('change', function() {
+    config.hitokotoEnabled = this.checked;
+    localStorage.setItem("config", JSON.stringify(config));
+    toggleHitokotoDisplay();
+    
+    // 同步主页设置开关状态
+    document.getElementById('hitokotoToggle').checked = this.checked;
+});
+
+// 监听每日一言拖拽开关
+document.getElementById('hitokotoDragToggle').addEventListener('change', function() {
+    config.hitokotoDragEnabled = this.checked;
+    localStorage.setItem("config", JSON.stringify(config));
+    
+    // 立即应用设置
+    if (!config.hitokotoDragEnabled) {
+        // 如果禁用拖拽，恢复到默认位置
+        positionHitokotoBelowSearch();
+    }
 });

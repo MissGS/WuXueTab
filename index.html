@@ -43,6 +43,11 @@
     <button id="searchBtn">搜索</button>
 </div>
 
+<!-- 每日一言 -->
+<div id="hitokotoBox">
+    <div id="hitokotoText">:D 获取中...</div>
+</div>
+
 <!-- 设置面板 -->
 <div id="settingsPanel">
     <div class="settings-header">
@@ -55,6 +60,7 @@
         <div class="category-column">
             <div class="category-item active capsule-item" data-category="background">背景设置</div>
             <div class="category-item capsule-item" data-category="search">搜索引擎</div>
+            <div class="category-item capsule-item" data-category="hitokoto">每日一言</div>
             <div class="category-item capsule-item" data-category="other">其他设置</div>
         </div>
         
@@ -62,6 +68,7 @@
         <div class="subcategory-column">
             <div class="subcategory-item active capsule-item" data-subcategory="background-options" data-category="background">背景选项</div>
             <div class="subcategory-item capsule-item" data-subcategory="background-manage" data-category="background">背景管理</div>
+            <div class="subcategory-item capsule-item" data-subcategory="hitokoto-settings" data-category="hitokoto">每日一言设置</div>
             <div class="subcategory-item capsule-item" data-subcategory="search-engine" data-category="search">搜索引擎管理</div>
         </div>
         
@@ -91,6 +98,18 @@
                 </div>
             </div>
             
+            <!-- 每日一言功能区 -->
+            <div id="hitokoto-settings" class="function-content">
+                <div class="section-title">每日一言设置</div>
+                <div class="setting-item">
+                    <label class="switch">
+                        <input type="checkbox" id="hitokotoTogglePanel">
+                        <span class="slider"></span>
+                    </label>
+                    <span class="setting-label">启用每日一言</span>
+                </div>
+            </div>
+            
             <!-- 搜索引擎管理功能区 -->
             <div id="search-engine" class="function-content">
                 <div class="section-title">搜索引擎管理</div>
@@ -111,7 +130,20 @@
             <!-- 其他设置功能区 -->
             <div id="other-settings" class="function-content">
                 <div class="section-title">其他设置</div>
-                <p>暂无设置</p>
+                <div class="setting-item">
+                    <label class="switch">
+                        <input type="checkbox" id="hitokotoToggle">
+                        <span class="slider"></span>
+                    </label>
+                    <span class="setting-label">显示每日一言</span>
+                </div>
+                <div class="setting-item">
+                    <label class="switch">
+                        <input type="checkbox" id="hitokotoDragToggle">
+                        <span class="slider"></span>
+                    </label>
+                    <span class="setting-label">允许拖拽每日一言</span>
+                </div>
             </div>
         </div>
     </div>

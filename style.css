@@ -75,197 +75,30 @@ body {
 }
 
 /*
- * 设置面板主容器
- * 包含整个设置界面的所有元素
+ * 每日一言模块
  */
-#settingsPanel {
+#hitokotoBox {
     position: fixed;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%) scale(0.8);
-    width: 800px;
-    height: 500px;
-    border-radius: 20px;
-    /* 移除辉光效果 */
+    top: calc(50% + 60px);
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 15px 25px;
+    border-radius: 25px;
+    display: flex;
+    align-items: center;
+    backdrop-filter: blur(25px);
     background: rgba(255,255,255,0.25);
-    backdrop-filter: blur(30px);
-    opacity: 0;
-    pointer-events: none;
-    transition: all 0.3s ease;
-    z-index: 999;
-    display: flex;
-    flex-direction: column;
-}
-#settingsPanel.show {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
-    pointer-events: auto;
-}
-
-/*
- * 设置面板头部区域
- * 包含标题和关闭按钮
- */
-.settings-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px 20px;
-    border-bottom: 1px solid rgba(255,255,255,0.2);
-    border-radius: 20px 20px 0 0; /* 修复左上角和右上角圆角显示问题 */
-}
-.settings-header h2 {
-    margin: 0;
-    color: #000;
-    font-size: 20px;
-}
-#closeSettings {
-    background: rgba(0,0,0,0.6);
-    color: white;
-    border: none;
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    cursor: pointer;
-    font-weight: bold;
-    transition: 0.3s;
-}
-#closeSettings:hover {
-    background: rgba(0,0,0,0.8);
-}
-
-/*
- * 设置面板主要内容区域
- * 包含三个纵向排列的列：大分类、小分类、功能区
- */
-.settings-content {
-    display: flex;
-    flex: 1;
-    overflow: hidden;
-    border-radius: 0 0 20px 20px; /* 修复左下角和右下角圆角显示问题 */
-}
-
-/*
- * 左一列：大分类
- * 显示主要功能分类（背景设置、搜索引擎、其他设置）
- */
-.category-column {
-    width: 150px;
-    border-right: 1px solid rgba(255,255,255,0.2);
-    background: rgba(255,255,255,0.15);
-    padding: 15px 0;
-    border-radius: 0 0 0 20px; /* 修复左下角圆角显示问题 */
-}
-
-/*
- * 圆形胶囊样式
- * 用于大分类和小分类项目的统一视觉风格
- */
-.capsule-item {
-    margin: 5px 10px;
-    padding: 12px 20px;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    color: #000;
-    font-weight: bold;
-    font-size: 14px;
-    border-radius: 30px;
+    z-index: 400;
     text-align: center;
-}
-.capsule-item:hover {
-    background: rgba(255,255,255,0.3);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-}
-.capsule-item.active {
-    background: rgba(255,255,255,0.4);
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-}
-
-/*
- * 左二列：小分类
- * 显示当前选中大分类下的子分类项目
- */
-.subcategory-column {
-    width: 200px;
-    border-right: 1px solid rgba(255,255,255,0.2);
-    background: rgba(255,255,255,0.2);
-    padding: 15px 0;
-}
-
-/*
- * 右侧功能区
- * 显示具体设置内容的主区域
- */
-.function-area {
-    flex: 1;
-    padding: 20px;
-    overflow-y: auto;
-    border-radius: 0 0 20px 0; /* 修复右下角圆角显示问题 */
-}
-
-.function-content {
-    display: none;
-}
-.function-content.active {
-    display: block;
-}
-
-.section-title {
-    font-size: 18px;
-    font-weight: bold;
-    margin-bottom: 15px;
-    color: #000;
-}
-
-/*
- * 图片预览容器
- * 用于显示当前背景和每日一图示例的预览区域
- */
-.preview-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-}
-
-.preview-item {
-    flex: 1;
-    min-width: 250px;
-}
-
-.preview-label {
-    font-weight: bold;
-    margin-bottom: 10px;
-    color: #000;
-}
-
-.image-preview {
-    width: 100%;
-    height: 200px;
-    border-radius: 15px;
-    background: rgba(255,255,255,0.3);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    position: relative;
+    max-width: 80%;
     transition: all 0.3s ease;
-    cursor: pointer;
 }
 
-.image-preview:hover {
-    transform: scale(1.02);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-}
-
-.image-preview img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-#currentBgPreview {
-    background-size: cover;
-    background-position: center;
+#hitokotoText {
+    font-size: 16px;
+    color: #000;
+    font-weight: bold;
+    cursor: move;
 }
 
 /*
@@ -274,9 +107,9 @@ body {
  */
 #searchBox {
     position: fixed;
-    top: 40%;
+    top: 50%;
     left: 50%;
-    transform: translate(-50%, 0);
+    transform: translate(-50%, -50%);
     padding: 15px 20px;
     border-radius: 25px;
     display: flex;
@@ -554,6 +387,260 @@ button {
 }
 
 /*
+ * 设置面板开关样式
+ */
+.setting-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.setting-label {
+    margin-left: 10px;
+    font-weight: bold;
+    color: #000;
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 24px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0,0,0,0.3);
+    transition: .3s;
+    border-radius: 24px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .3s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: rgba(0,0,0,0.6);
+}
+
+input:checked + .slider:before {
+    transform: translateX(26px);
+}
+
+/*
+ * 设置面板主容器
+ * 包含整个设置界面的所有元素
+ */
+#settingsPanel {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%) scale(0.8);
+    width: 800px;
+    height: 500px;
+    border-radius: 20px;
+    /* 移除辉光效果 */
+    background: rgba(255,255,255,0.25);
+    backdrop-filter: blur(30px);
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s ease;
+    z-index: 999;
+    display: flex;
+    flex-direction: column;
+}
+#settingsPanel.show {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+    pointer-events: auto;
+}
+
+/*
+ * 设置面板头部区域
+ * 包含标题和关闭按钮
+ */
+.settings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+    border-radius: 20px 20px 0 0; /* 修复左上角和右上角圆角显示问题 */
+}
+.settings-header h2 {
+    margin: 0;
+    color: #000;
+    font-size: 20px;
+}
+#closeSettings {
+    background: rgba(0,0,0,0.6);
+    color: white;
+    border: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-weight: bold;
+    transition: 0.3s;
+}
+#closeSettings:hover {
+    background: rgba(0,0,0,0.8);
+}
+
+/*
+ * 设置面板主要内容区域
+ * 包含三个纵向排列的列：大分类、小分类、功能区
+ */
+.settings-content {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    border-radius: 0 0 20px 20px; /* 修复左下角和右下角圆角显示问题 */
+}
+
+/*
+ * 左一列：大分类
+ * 显示主要功能分类（背景设置、搜索引擎、其他设置）
+ */
+.category-column {
+    width: 150px;
+    border-right: 1px solid rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.15);
+    padding: 15px 0;
+    border-radius: 0 0 0 20px; /* 修复左下角圆角显示问题 */
+}
+
+/*
+ * 圆形胶囊样式
+ * 用于大分类和小分类项目的统一视觉风格
+ */
+.capsule-item {
+    margin: 5px 10px;
+    padding: 12px 20px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    color: #000;
+    font-weight: bold;
+    font-size: 14px;
+    border-radius: 30px;
+    text-align: center;
+}
+.capsule-item:hover {
+    background: rgba(255,255,255,0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+.capsule-item.active {
+    background: rgba(255,255,255,0.4);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/*
+ * 左二列：小分类
+ * 显示当前选中大分类下的子分类项目
+ */
+.subcategory-column {
+    width: 200px;
+    border-right: 1px solid rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.2);
+    padding: 15px 0;
+}
+
+/*
+ * 右侧功能区
+ * 显示具体设置内容的主区域
+ */
+.function-area {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    border-radius: 0 0 20px 0; /* 修复右下角圆角显示问题 */
+}
+
+.function-content {
+    display: none;
+}
+.function-content.active {
+    display: block;
+}
+
+.section-title {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 15px;
+    color: #000;
+}
+
+/*
+ * 图片预览容器
+ * 用于显示当前背景和每日一图示例的预览区域
+ */
+.preview-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.preview-item {
+    flex: 1;
+    min-width: 250px;
+}
+
+.preview-label {
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #000;
+}
+
+.image-preview {
+    width: 100%;
+    height: 200px;
+    border-radius: 15px;
+    background: rgba(255,255,255,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.image-preview:hover {
+    transform: scale(1.02);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.image-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+#currentBgPreview {
+    background-size: cover;
+    background-position: center;
+}
+
+/*
  * 搜索引擎分组
  * 用于组织和管理搜索引擎列表的分组控件
  */
@@ -597,4 +684,46 @@ button {
 
 .toggle-icon.rotated {
     transform: rotate(180deg);
+}
+/* 搜索框拖拽时的优化样式 */
+#searchBox.dragging {
+    cursor: move;
+    transition: none; /* 拖拽时禁用过渡效果，提升性能 */
+    will-change: top, left; /* 提示浏览器优化性能 */
+}
+
+/* 每日一言拖拽时的优化样式 */
+#hitokotoBox.dragging {
+    cursor: move;
+    transition: none;
+    will-change: top, left; /* 提示浏览器优化性能 */
+}
+
+/* 优化搜索框层级和交互 */
+#searchInput, #searchBtn, #currentEngineBtn {
+    position: relative;
+    z-index: 10;
+    pointer-events: auto; /* 确保子元素可以正常交互 */
+}
+
+/* 优化拖拽时的光标 */
+#searchBox:not(.dragging) {
+    cursor: default;
+}
+
+/* 性能优化：减少重绘 */
+#searchBox, #hitokotoBox {
+    backface-visibility: hidden;
+    transform: translateZ(0);
+}
+
+/* 优化搜索框的子元素布局 */
+#searchBox > * {
+    flex-shrink: 0; /* 防止拖拽时元素被压缩 */
+}
+
+/* 确保输入框在拖拽时保持正常状态 */
+#searchInput:focus {
+    outline: 2px solid rgba(255, 255, 255, 0.5);
+    outline-offset: 2px;
 }
