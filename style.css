@@ -1,0 +1,600 @@
+/*
+ * 全局样式设置
+ */
+body {
+    margin: 0;
+    width: 100%;
+    height: 100vh;
+    background: var(--bg, #222);
+    background-size: cover;
+    background-position: center;
+    font-family: "Microsoft YaHei", sans-serif;
+    overflow: hidden;
+}
+
+/* 隐藏默认滚动条并自定义 */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+/*
+ * 遮罩层样式
+ * 用于在设置面板打开时创建背景模糊效果
+ */
+#overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    backdrop-filter: blur(15px);
+    background: rgba(0,0,0,0.3);
+    display: none;
+    z-index: 998;
+}
+
+/*
+ * 设置按钮样式
+ * 位于页面右上角的齿轮图标按钮
+ */
+#settingsBtn {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    font-size: 26px;
+    cursor: pointer;
+    padding: 10px;
+    border-radius: 15px;
+    backdrop-filter: blur(15px);
+    background: rgba(255,255,255,0.2);
+    transition: 0.3s;
+    user-select: none;
+    z-index: 1000;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+#settingsBtn:hover {
+    background: rgba(255,255,255,0.35);
+    transform: scale(1.1);
+}
+
+/*
+ * 设置面板主容器
+ * 包含整个设置界面的所有元素
+ */
+#settingsPanel {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%) scale(0.8);
+    width: 800px;
+    height: 500px;
+    border-radius: 20px;
+    /* 移除辉光效果 */
+    background: rgba(255,255,255,0.25);
+    backdrop-filter: blur(30px);
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s ease;
+    z-index: 999;
+    display: flex;
+    flex-direction: column;
+}
+#settingsPanel.show {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+    pointer-events: auto;
+}
+
+/*
+ * 设置面板头部区域
+ * 包含标题和关闭按钮
+ */
+.settings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+    border-radius: 20px 20px 0 0; /* 修复左上角和右上角圆角显示问题 */
+}
+.settings-header h2 {
+    margin: 0;
+    color: #000;
+    font-size: 20px;
+}
+#closeSettings {
+    background: rgba(0,0,0,0.6);
+    color: white;
+    border: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-weight: bold;
+    transition: 0.3s;
+}
+#closeSettings:hover {
+    background: rgba(0,0,0,0.8);
+}
+
+/*
+ * 设置面板主要内容区域
+ * 包含三个纵向排列的列：大分类、小分类、功能区
+ */
+.settings-content {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    border-radius: 0 0 20px 20px; /* 修复左下角和右下角圆角显示问题 */
+}
+
+/*
+ * 左一列：大分类
+ * 显示主要功能分类（背景设置、搜索引擎、其他设置）
+ */
+.category-column {
+    width: 150px;
+    border-right: 1px solid rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.15);
+    padding: 15px 0;
+    border-radius: 0 0 0 20px; /* 修复左下角圆角显示问题 */
+}
+
+/*
+ * 圆形胶囊样式
+ * 用于大分类和小分类项目的统一视觉风格
+ */
+.capsule-item {
+    margin: 5px 10px;
+    padding: 12px 20px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    color: #000;
+    font-weight: bold;
+    font-size: 14px;
+    border-radius: 30px;
+    text-align: center;
+}
+.capsule-item:hover {
+    background: rgba(255,255,255,0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+.capsule-item.active {
+    background: rgba(255,255,255,0.4);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/*
+ * 左二列：小分类
+ * 显示当前选中大分类下的子分类项目
+ */
+.subcategory-column {
+    width: 200px;
+    border-right: 1px solid rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.2);
+    padding: 15px 0;
+}
+
+/*
+ * 右侧功能区
+ * 显示具体设置内容的主区域
+ */
+.function-area {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    border-radius: 0 0 20px 0; /* 修复右下角圆角显示问题 */
+}
+
+.function-content {
+    display: none;
+}
+.function-content.active {
+    display: block;
+}
+
+.section-title {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 15px;
+    color: #000;
+}
+
+/*
+ * 图片预览容器
+ * 用于显示当前背景和每日一图示例的预览区域
+ */
+.preview-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.preview-item {
+    flex: 1;
+    min-width: 250px;
+}
+
+.preview-label {
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #000;
+}
+
+.image-preview {
+    width: 100%;
+    height: 200px;
+    border-radius: 15px;
+    background: rgba(255,255,255,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.image-preview:hover {
+    transform: scale(1.02);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.image-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+#currentBgPreview {
+    background-size: cover;
+    background-position: center;
+}
+
+/*
+ * 搜索框
+ * 页面中央的主要搜索区域
+ */
+#searchBox {
+    position: fixed;
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, 0);
+    padding: 15px 20px;
+    border-radius: 25px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    backdrop-filter: blur(25px);
+    background: rgba(255,255,255,0.25);
+    z-index: 500;
+}
+
+/*
+ * 当前搜索引擎按钮
+ * 显示当前选中的搜索引擎
+ */
+#currentEngineBtn {
+    padding: 6px 12px;
+    border-radius: 15px;
+    background: rgba(255,255,255,0.35);
+    cursor: pointer;
+    font-weight: bold;
+    transition: 0.2s;
+    user-select: none;
+    color: #000;
+}
+#currentEngineBtn:hover {
+    background: rgba(255,255,255,0.55);
+    box-shadow: 0 0 10px rgba(255,255,255,0.5);
+}
+
+/*
+ * 搜索输入框和按钮
+ * 用户输入搜索关键词和触发搜索的控件
+ */
+#searchInput {
+    width: 220px;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 15px;
+    outline: none;
+    background: rgba(255,255,255,0.4);
+    color: #000;
+    /* 确保输入框可以接收焦点和输入 */
+    pointer-events: auto;
+    touch-action: manipulation;
+    /* 确保文字清晰可见 */
+    caret-color: #000;
+    /* 确保输入框在层级上位于顶层 */
+    position: relative;
+    z-index: 1;
+}
+#searchBtn {
+    padding: 8px 14px;
+    border: none;
+    border-radius: 15px;
+    background: rgba(0,0,0,0.6);
+    color: white;
+    cursor: pointer;
+    transition: 0.3s;
+}
+#searchBtn:hover {
+    background: rgba(0,0,0,0.8);
+}
+
+/*
+ * 设置面板搜索引擎列表按钮美化
+ * 在设置面板中显示的搜索引擎列表项
+ */
+#engineList button, #popupEngineList button {
+    width: 100%;
+    margin-top: 5px;
+    padding: 8px;
+    border: none;
+    border-radius: 15px;
+    background: rgba(255,255,255,0.35);
+    color: #000;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+    user-select: none;
+}
+#engineList button:hover, #popupEngineList button:hover {
+    background: rgba(255,255,255,0.55);
+    box-shadow: 0 0 10px rgba(255,255,255,0.4);
+}
+
+/*
+ * 自定义上传按钮
+ * 用于上传背景图片的控件
+ */
+.custom-upload-btn {
+    display: inline-block;
+    padding: 12px 15px;
+    border-radius: 15px;
+    background: rgba(0,0,0,0.6);
+    color: white;
+    cursor: pointer;
+    text-align: center;
+    transition: 0.3s;
+    margin-top: 10px;
+    font-size: 14px;
+    width: 100%;
+    box-sizing: border-box;
+}
+.custom-upload-btn:hover {
+    background: rgba(0,0,0,0.8);
+}
+#uploadBgInput {
+    display: none;
+}
+
+/*
+ * 获取每日一图按钮
+ * 用于获取并设置每日一图作为背景的控件
+ */
+#refreshBgBtn {
+    padding: 12px 15px;
+    border-radius: 15px;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    cursor: pointer;
+    text-align: center;
+    transition: 0.3s;
+    font-weight: bold;
+    border: none;
+    outline: none;
+    width: 100%;
+    margin-top: 5px;
+    font-size: 14px;
+    margin-bottom: 10px;
+    box-sizing: border-box;
+}
+
+#refreshBgBtn:hover {
+    background: rgba(0, 0, 0, 0.8);
+}
+
+/*
+ * 弹窗
+ * 用于选择搜索引擎的弹出窗口
+ */
+#enginePopup {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%) scale(0.8);
+    width: 280px;
+    background: rgba(255,255,255,0.25);
+    backdrop-filter: blur(25px);
+    border-radius: 20px;
+    box-shadow: 0 0 25px rgba(255,255,255,0.4);
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s ease;
+    z-index: 1001;
+}
+#enginePopup.show {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+    pointer-events: auto;
+}
+#popupContent {
+    padding: 15px;
+}
+.popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    color: #000;
+}
+#popupContent button {
+    border-radius: 15px;
+}
+
+/*
+ * 删除确认弹窗
+ * 用于确认删除搜索引擎的确认对话框
+ */
+#confirmPopup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.8);
+    width: 280px;
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(25px);
+    border-radius: 20px;
+    box-shadow: 0 0 25px rgba(255, 255, 255, 0.4);
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s ease;
+    z-index: 1002;
+}
+
+#confirmPopup.show {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+    pointer-events: auto;
+}
+
+#confirmContent {
+    padding: 20px;
+}
+
+.confirm-message {
+    text-align: center;
+    margin-bottom: 20px;
+    font-weight: bold;
+    color: #000;
+}
+
+.confirm-buttons {
+    display: flex;
+    justify-content: space-between;
+}
+
+.confirm-buttons button {
+    padding: 8px 15px;
+    border: none;
+    border-radius: 15px;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    cursor: pointer;
+    transition: 0.3s;
+    font-weight: bold;
+}
+
+.confirm-buttons button:hover {
+    background: rgba(0, 0, 0, 0.8);
+}
+
+button {
+    border: none;
+    outline: none;
+}
+
+/*
+ * 玻璃效果按钮
+ * 通用的玻璃质感按钮样式
+ */
+.glass-button {
+    padding: 12px 15px;
+    border-radius: 15px;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    cursor: pointer;
+    text-align: center;
+    transition: 0.3s;
+    font-weight: bold;
+    border: none;
+    outline: none;
+    width: 100%;
+    margin-top: 5px;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+.glass-button:hover {
+    background: rgba(0, 0, 0, 0.8);
+}
+
+/*
+ * 玻璃效果输入框
+ * 通用的玻璃质感输入框样式
+ */
+.glass-input {
+    width: calc(100% - 20px);
+    padding: 8px 10px;
+    margin-top: 5px;
+    border-radius: 15px;
+    border: none;
+    outline: none;
+    background: rgba(255, 255, 255, 0.4);
+    color: #000;
+    font-size: 14px;
+}
+
+/*
+ * 搜索引擎分组
+ * 用于组织和管理搜索引擎列表的分组控件
+ */
+#engineGroups {
+    margin-bottom: 15px;
+}
+
+.group-header {
+    padding: 8px;
+    border-radius: 15px;
+    background: rgba(255, 255, 255, 0.35);
+    cursor: pointer;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+    margin-top: 5px;
+    color: #000;
+}
+
+.group-header:hover {
+    background: rgba(255, 255, 255, 0.55);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
+}
+
+.group-content {
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+    max-height: 1000px;
+}
+
+.group-content.collapsed {
+    max-height: 0;
+    transition: max-height 0.3s ease-out;
+}
+
+.toggle-icon {
+    transition: transform 0.3s ease;
+}
+
+.toggle-icon.rotated {
+    transform: rotate(180deg);
+}

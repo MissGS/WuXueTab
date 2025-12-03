@@ -1,0 +1,9 @@
+{
+  "manifest_version": 3,
+  "name": "WuXueEdge",
+  "version": "1.0",
+  "description": "Custom search engine, glass UI, and uploadable backgrounds.",
+  "chrome_url_overrides": {
+    "newtab": "index.html"
+  }
+}

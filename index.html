@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>WuXueTab</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="./logo.ico" type="image/x-icon">
+</head>
+<body>
+
+<!-- 模糊遮罩 -->
+<div id="overlay"></div>
+
+<!-- 搜索引擎选择弹窗 -->
+<div id="enginePopup">
+    <div id="popupContent">
+        <div class="popup-header">
+            <span>选择搜索引擎</span>
+            <button id="popupClose">✕</button>
+        </div>
+        <div id="popupEngineList"></div>
+    </div>
+</div>
+
+<!-- 删除确认弹窗 -->
+<div id="confirmPopup">
+    <div id="confirmContent">
+        <div class="confirm-message">确认删除搜索引擎吗？</div>
+        <div class="confirm-buttons">
+            <button id="cancelDeleteBtn">取消</button>
+            <button id="confirmDeleteBtn">确认</button>
+        </div>
+    </div>
+</div>
+
+<!-- 设置按钮 -->
+<div id="settingsBtn">⚙</div>
+
+<!-- 搜索框 -->
+<div id="searchBox">
+    <div id="currentEngineBtn" class="engine-btn"></div>
+    <input id="searchInput" type="text" placeholder="搜索...">
+    <button id="searchBtn">搜索</button>
+</div>
+
+<!-- 设置面板 -->
+<div id="settingsPanel">
+    <div class="settings-header">
+        <h2>设置</h2>
+        <button id="closeSettings">✕</button>
+    </div>
+    
+    <div class="settings-content">
+        <!-- 左一列：大分类 -->
+        <div class="category-column">
+            <div class="category-item active capsule-item" data-category="background">背景设置</div>
+            <div class="category-item capsule-item" data-category="search">搜索引擎</div>
+            <div class="category-item capsule-item" data-category="other">其他设置</div>
+        </div>
+        
+        <!-- 左二列：小分类 -->
+        <div class="subcategory-column">
+            <div class="subcategory-item active capsule-item" data-subcategory="background-options" data-category="background">背景选项</div>
+            <div class="subcategory-item capsule-item" data-subcategory="background-manage" data-category="background">背景管理</div>
+            <div class="subcategory-item capsule-item" data-subcategory="search-engine" data-category="search">搜索引擎管理</div>
+        </div>
+        
+        <!-- 右侧功能区 -->
+        <div class="function-area">
+            <!-- 背景选项功能区 -->
+            <div id="background-options" class="function-content active">
+                <div class="section-title">背景选项</div>
+                <label class="custom-upload-btn" for="uploadBgInput">上传背景</label>
+                <input type="file" id="uploadBgInput" accept="image/*">
+            </div>
+            
+            <!-- 背景管理功能区 -->
+            <div id="background-manage" class="function-content">
+                <div class="section-title">背景管理</div>
+                <div class="preview-container">
+                    <div class="preview-item">
+                        <div class="preview-label">当前背景</div>
+                        <div id="currentBgPreview" class="image-preview preview-clickable" data-action="set-current"></div>
+                    </div>
+                    <div class="preview-item">
+                        <div class="preview-label">每日一图示例</div>
+                        <div id="dailyBgPreview" class="image-preview preview-clickable" data-action="set-daily">
+                            <img src="https://t.alcy.cc/ycy" alt="每日一图">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 搜索引擎管理功能区 -->
+            <div id="search-engine" class="function-content">
+                <div class="section-title">搜索引擎管理</div>
+                <div id="engineGroups">
+                    <div class="group-header" id="defaultGroupHeader">
+                        <span>默认搜索引擎</span>
+                        <span class="toggle-icon">▼</span>
+                    </div>
+                    <div class="group-content collapsed" id="defaultGroupContent">
+                        <div id="engineList"></div>
+                    </div>
+                </div>
+                <input id="customName" placeholder="自定义名称" class="glass-input">
+                <input id="customUrl" placeholder="搜索链接" class="glass-input">
+                <button id="addEngineBtn" class="glass-button">添加引擎</button>
+            </div>
+            
+            <!-- 其他设置功能区 -->
+            <div id="other-settings" class="function-content">
+                <div class="section-title">其他设置</div>
+                <p>暂无设置</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
