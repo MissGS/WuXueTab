@@ -1,512 +1,537 @@
 // ---------- 数据 ----------
-// 存储搜索引擎数据，键为搜索引擎名称，值为搜索URL模板
-let engines = JSON.parse(localStorage.getItem("engines")) || {
+const DEFAULT_ENGINES = {
     "必应": "https://www.bing.com/search?q=%s",
     "百度": "https://www.baidu.com/s?wd=%s",
     "谷歌": "https://www.google.com/search?q=%s"
 };
 
-// 当前选中的搜索引擎，默认为必应
-let currentEngine = localStorage.getItem("currentEngine") || "必应";
+function readJson(key, fallback) {
+    try {
+        const value = JSON.parse(localStorage.getItem(key));
+        return value && typeof value === "object" ? value : fallback;
+    } catch {
+        return fallback;
+    }
+}
+
+let engines = readJson("engines", DEFAULT_ENGINES);
+if (!Object.keys(engines).length) engines = { ...DEFAULT_ENGINES };
+let currentEngine = localStorage.getItem("currentEngine") || Object.keys(engines)[0] || "必应";
+if (!engines[currentEngine]) currentEngine = Object.keys(engines)[0] || "必应";
+
+let activeCategory = localStorage.getItem("activeCategory") || "background";
+let activeSubcategory = localStorage.getItem("activeSubcategory") || "background-options";
+let engineToDelete = null;
+let toastTimer = null;
 
 // ---------- 元素 ----------
-// 获取页面中的各种DOM元素引用
-const overlay = document.getElementById("overlay");                      // 遮罩层
-const settingsBtn = document.getElementById("settingsBtn");              // 设置按钮
-const settingsPanel = document.getElementById("settingsPanel");          // 设置面板
-const searchBox = document.getElementById("searchBox");                  // 搜索框
-const searchInput = document.getElementById("searchInput");              // 搜索输入框
-const searchBtn = document.getElementById("searchBtn");                  // 搜索按钮
-const currentEngineBtn = document.getElementById("currentEngineBtn");    // 当前搜索引擎按钮
-const closeSettings = document.getElementById("closeSettings");          // 关闭设置按钮
-const currentBgPreview = document.getElementById("currentBgPreview");    // 当前背景预览
+const overlay = document.getElementById("overlay");
+const settingsBtn = document.getElementById("settingsBtn");
+const settingsPanel = document.getElementById("settingsPanel");
+const searchBox = document.getElementById("searchBox");
+const searchInput = document.getElementById("searchInput");
+const searchBtn = document.getElementById("searchBtn");
+const currentEngineBtn = document.getElementById("currentEngineBtn");
+const closeSettings = document.getElementById("closeSettings");
+const currentBgPreview = document.getElementById("currentBgPreview");
+const dailyBgPreview = document.getElementById("dailyBgPreview");
+const enginePopup = document.getElementById("enginePopup");
+const popupEngineList = document.getElementById("popupEngineList");
+const popupClose = document.getElementById("popupClose");
+const confirmPopup = document.getElementById("confirmPopup");
+const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
+const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
+const defaultGroupHeader = document.getElementById("defaultGroupHeader");
+const defaultGroupContent = document.getElementById("defaultGroupContent");
+const engineList = document.getElementById("engineList");
+const customName = document.getElementById("customName");
+const customUrl = document.getElementById("customUrl");
+const addEngineBtn = document.getElementById("addEngineBtn");
+const uploadInput = document.getElementById("uploadBgInput");
+const toast = document.getElementById("toast");
+const dailyQuoteBox = document.getElementById("dailyQuoteBox");
+const dailyQuoteText = document.getElementById("dailyQuoteText");
+const dailyQuoteFrom = document.getElementById("dailyQuoteFrom");
+const refreshQuoteBtn = document.getElementById("refreshQuoteBtn");
+const quoteToggle = document.getElementById("quoteToggle");
 
-const enginePopup = document.getElementById("enginePopup");              // 搜索引擎选择弹窗
-const popupEngineList = document.getElementById("popupEngineList");      // 弹窗中的搜索引擎列表
-const popupClose = document.getElementById("popupClose");                // 弹窗关闭按钮
+let quoteEnabled = localStorage.getItem("quoteEnabled") !== "false";
 
-const confirmPopup = document.getElementById("confirmPopup");            // 确认删除弹窗
-const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");      // 取消删除按钮
-const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");    // 确认删除按钮
+// ---------- 轻提示 ----------
+function showToast(message) {
+    toast.textContent = message;
+    toast.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove("show"), 1800);
+}
 
-const defaultGroupHeader = document.getElementById("defaultGroupHeader"); // 默认搜索引擎分组标题
-const defaultGroupContent = document.getElementById("defaultGroupContent"); // 默认搜索引擎分组内容
+function nudgeSearchBox(message) {
+    showToast(message);
+    searchBox.classList.remove("shake");
+    void searchBox.offsetWidth;
+    searchBox.classList.add("shake");
+    searchInput.focus();
+}
 
-// 用于跟踪待删除的搜索引擎
-let engineToDelete = null;
+// ---------- 设置面板 ----------
+function setOverlay(show) {
+    overlay.classList.toggle("show", show);
+}
 
-// ---------- 分组管理 ----------
-// 为默认搜索引擎分组添加展开/折叠功能
-defaultGroupHeader.addEventListener('click', () => {
-    // 切换折叠状态
-    defaultGroupContent.classList.toggle('collapsed');
-    // 旋转指示图标
-    const icon = defaultGroupHeader.querySelector('.toggle-icon');
-    icon.classList.toggle('rotated');
-});
-
-// 初始化时确保分组是折叠的
-defaultGroupContent.classList.add('collapsed');
-const toggleIcon = defaultGroupHeader.querySelector('.toggle-icon');
-toggleIcon.classList.remove('rotated');
-
-// ---------- 面板显示 ----------
-/**
- * 控制设置面板的显示和隐藏
- * @param {boolean} show - true表示显示面板，false表示隐藏面板
- */
-function toggleSettings(show){
-    if(show){
-        settingsPanel.classList.add("show");
-        overlay.style.display="block";
-        // 更新当前背景预览
+function toggleSettings(show) {
+    settingsPanel.classList.toggle("show", show);
+    setOverlay(show || enginePopup.classList.contains("show") || confirmPopup.classList.contains("show"));
+    if (show) {
+        applySettingsView(activeCategory, activeSubcategory);
         updateCurrentBgPreview();
-    }else{
-        settingsPanel.classList.remove("show");
-        overlay.style.display="none";
     }
 }
 
-// 初始化设置面板状态
-/**
- * 初始化设置面板的状态，确保正确显示默认内容
- */
-function initSettingsPanel() {
-    // 隐藏所有功能区
-    document.querySelectorAll('.function-content').forEach(content => {
-        content.classList.remove('active');
+function applySettingsView(category, preferredSubcategory) {
+    const categoryItems = [...document.querySelectorAll(".category-item")];
+    const subItems = [...document.querySelectorAll(".subcategory-item")];
+    const contents = [...document.querySelectorAll(".function-content")];
+    const visibleSubItems = subItems.filter(item => item.dataset.category === category);
+    const targetSubcategory = visibleSubItems.some(item => item.dataset.subcategory === preferredSubcategory)
+        ? preferredSubcategory
+        : visibleSubItems[0]?.dataset.subcategory;
+
+    categoryItems.forEach(item => item.classList.toggle("active", item.dataset.category === category));
+    subItems.forEach(item => {
+        const visible = item.dataset.category === category;
+        item.style.display = visible ? "block" : "none";
+        item.classList.toggle("active", item.dataset.subcategory === targetSubcategory);
     });
-    
-    // 隐藏所有非背景相关的小分类
-    document.querySelectorAll('.subcategory-item').forEach(subItem => {
-        if (subItem.getAttribute('data-category') !== 'background') {
-            subItem.style.display = 'none';
-        }
-    });
-    
-    // 确保背景相关的小分类可见并激活第一个
-    const backgroundSubItems = document.querySelectorAll('.subcategory-item[data-category="background"]');
-    backgroundSubItems.forEach((subItem, index) => {
-        subItem.style.display = 'block';
-        if (index === 0) {
-            subItem.classList.add('active');
-            // 显示对应的功能区
-            const subcategory = subItem.getAttribute('data-subcategory');
-            const targetContent = document.getElementById(subcategory);
-            if (targetContent) {
-                targetContent.classList.add('active');
-            }
-        } else {
-            subItem.classList.remove('active');
-        }
-    });
-    
-    // 确保背景大分类被激活
-    document.querySelectorAll('.category-item').forEach(categoryItem => {
-        categoryItem.classList.remove('active');
-        if (categoryItem.getAttribute('data-category') === 'background') {
-            categoryItem.classList.add('active');
-        }
-    });
+    contents.forEach(content => content.classList.toggle("active", content.id === targetSubcategory));
+
+    activeCategory = category;
+    activeSubcategory = targetSubcategory || preferredSubcategory;
+    localStorage.setItem("activeCategory", activeCategory);
+    localStorage.setItem("activeSubcategory", activeSubcategory);
 }
 
-// 绑定各种事件处理器
-settingsBtn.onclick = ()=>{
-    toggleSettings(true);
-    // 延迟初始化设置面板，确保DOM已完全加载
-    setTimeout(initSettingsPanel, 10);
-};
-closeSettings.onclick = ()=>toggleSettings(false);
-overlay.onclick = ()=>{
-    toggleSettings(false); 
+settingsBtn.onclick = () => toggleSettings(true);
+closeSettings.onclick = () => toggleSettings(false);
+overlay.onclick = () => {
+    toggleSettings(false);
     enginePopup.classList.remove("show");
     confirmPopup.classList.remove("show");
+    setOverlay(false);
 };
 
-// ---------- 更新当前背景预览 ----------
-/**
- * 更新当前背景预览图，显示当前正在使用的背景
- */
-function updateCurrentBgPreview() {
-    // 获取当前背景URL
-    const currentBg = document.body.style.getPropertyValue('--bg');
-    if (currentBg) {
-        // 提取url()中的内容
-        const urlMatch = currentBg.match(/url\(["']?(.*?)["']?\)/);
-        if (urlMatch && urlMatch[1]) {
-            currentBgPreview.style.backgroundImage = `url("${urlMatch[1]}")`;
-        }
-    } else {
-        // 如果没有设置背景，显示默认背景
-        currentBgPreview.style.backgroundImage = 'var(--bg)';
-    }
+document.querySelectorAll(".category-item").forEach(item => {
+    item.addEventListener("click", () => applySettingsView(item.dataset.category, activeSubcategory));
+});
+
+document.querySelectorAll(".subcategory-item").forEach(item => {
+    item.addEventListener("click", () => applySettingsView(item.dataset.category, item.dataset.subcategory));
+});
+
+defaultGroupHeader.addEventListener("click", () => {
+    defaultGroupContent.classList.toggle("collapsed");
+    defaultGroupHeader.querySelector(".toggle-icon").classList.toggle("rotated");
+});
+
+// ---------- 背景 ----------
+function setBackground(value) {
+    document.body.style.setProperty("--bg", `url("${value}")`);
+    localStorage.setItem("uploadedBackground", value);
+    updateCurrentBgPreview();
 }
 
-// ---------- 新设置面板分类切换 ----------
-// 大分类切换
-document.querySelectorAll('.category-item').forEach(item => {
-    item.addEventListener('click', () => {
-        // 移除所有大分类的激活状态
-        document.querySelectorAll('.category-item').forEach(i => {
-            i.classList.remove('active');
-        });
-        // 添加当前点击的大分类为激活状态
-        item.classList.add('active');
-        
-        // 隐藏所有功能区
-        document.querySelectorAll('.function-content').forEach(content => {
-            content.classList.remove('active');
-        });
-        
-        // 显示关联的小分类并隐藏其他小分类
-        const category = item.getAttribute('data-category');
-        document.querySelectorAll('.subcategory-item').forEach(subItem => {
-            if (subItem.getAttribute('data-category') === category) {
-                subItem.style.display = 'block';
-            } else {
-                subItem.style.display = 'none';
-            }
-        });
-        
-        // 激活第一个匹配的小分类并显示对应功能区
-        const firstSubItem = document.querySelector(`.subcategory-item[data-category="${category}"]`);
-        if (firstSubItem) {
-            firstSubItem.classList.add('active');
-            const subcategory = firstSubItem.getAttribute('data-subcategory');
-            const targetContent = document.getElementById(subcategory);
-            if (targetContent) {
-                targetContent.classList.add('active');
-            }
-        }
-    });
-});
+function updateCurrentBgPreview() {
+    const currentBg = document.body.style.getPropertyValue("--bg");
+    const urlMatch = currentBg.match(/url\(["']?(.*?)["']?\)/);
+    currentBgPreview.style.backgroundImage = urlMatch?.[1] ? `url("${urlMatch[1]}")` : "none";
+    currentBgPreview.textContent = urlMatch?.[1] ? "" : "暂无背景";
+}
 
-// 小分类切换
-document.querySelectorAll('.subcategory-item').forEach(item => {
-    item.addEventListener('click', () => {
-        // 移除所有小分类的激活状态
-        document.querySelectorAll('.subcategory-item').forEach(i => {
-            i.classList.remove('active');
-        });
-        // 添加当前点击的小分类为激活状态
-        item.classList.add('active');
-        
-        // 显示对应的功能区
-        const subcategory = item.getAttribute('data-subcategory');
-        document.querySelectorAll('.function-content').forEach(content => {
-            content.classList.remove('active');
-            if (content.id === subcategory) {
-                content.classList.add('active');
-            }
-        });
-    });
-});
-
-// ---------- 背景预览点击事件 ----------
-// 点击每日一图预览图获取并设置新的背景
-document.getElementById('dailyBgPreview').addEventListener('click', async () => {
+async function fetchDailyBg(apply = false) {
     try {
         const res = await fetch("https://t.alcy.cc/ycy");
-        if (res.ok) {
-            const url = await res.text();
-            document.body.style.setProperty("--bg", `url(${url})`);
-            // 保存背景以便在新标签页中恢复
-            localStorage.setItem('customBackground', url);
-            // 更新预览
-            updateCurrentBgPreview();
+        if (!res.ok) throw new Error("background request failed");
+        const url = (await res.text()).trim();
+        if (apply) {
+            setBackground(url);
+            showToast("已切换每日一图");
         }
-    } catch (e) {
-        console.error(e);
-    }
-    
-    // 视觉反馈
-    const preview = document.getElementById('dailyBgPreview');
-    preview.style.transform = 'scale(0.95)';
-    setTimeout(() => {
-        preview.style.transform = '';
-    }, 200);
-});
-
-// 点击当前背景预览图应用当前背景
-document.getElementById('currentBgPreview').addEventListener('click', () => {
-    // 获取当前背景URL
-    const currentBg = document.body.style.getPropertyValue('--bg');
-    if (currentBg) {
-        // 应用当前背景
-        document.body.style.setProperty("--bg", currentBg);
-        // 保存背景以便在新标签页中恢复
-        localStorage.setItem('customBackground', currentBg);
-    }
-    
-    // 视觉反馈
-    const preview = document.getElementById('currentBgPreview');
-    preview.style.transform = 'scale(0.95)';
-    setTimeout(() => {
-        preview.style.transform = '';
-    }, 200);
-});
-
-// ---------- 搜索引擎 ----------
-/**
- * 更新当前搜索引擎按钮的文本显示
- */
-function refreshCurrentEngineBtn(){
-    currentEngineBtn.textContent = currentEngine;
-}
-refreshCurrentEngineBtn();
-
-/**
- * 执行搜索操作
- */
-function doSearch(){
-    // 检查搜索关键字是否为空
-    const searchTerm = searchInput.value.trim();
-    console.log("搜索关键字:", searchTerm);
-    if (!searchTerm) {
-        console.log("搜索关键字为空");
-        alert("请输入搜索关键字");
-        return;
-    }
-    
-    // 检查当前引擎是否存在
-    console.log("当前引擎:", currentEngine);
-    console.log("所有引擎:", engines);
-    if (!engines[currentEngine]) {
-        console.error("当前选择的搜索引擎不存在:", currentEngine);
-        alert("当前搜索引擎配置有误");
-        return;
-    }
-    
-    try {
-        const encodedSearchTerm = encodeURIComponent(searchTerm);
-        const url = engines[currentEngine].replace("%s", encodedSearchTerm);
-        console.log("正在跳转到:", url);
-        window.location.href = url;
+        return url;
     } catch (error) {
-        console.error("搜索过程中发生错误:", error);
-        alert("搜索过程出现错误，请查看控制台了解详情");
+        console.error(error);
+        showToast("每日一图暂时获取失败");
+        return null;
     }
+}
+
+dailyBgPreview.addEventListener("click", async () => {
+    dailyBgPreview.style.transform = "scale(0.98)";
+    await fetchDailyBg(false);
+    showToast("每日一图仅作预览，上传后才会设置背景");
+    setTimeout(() => dailyBgPreview.style.transform = "", 180);
+});
+
+currentBgPreview.addEventListener("click", () => {
+    updateCurrentBgPreview();
+    showToast("当前背景已保持");
+});
+
+uploadInput.onchange = event => {
+    const file = event.target.files[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+        showToast("请选择图片文件");
+        event.target.value = "";
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = evt => {
+        setBackground(evt.target.result);
+        showToast("背景已更新");
+    };
+    reader.onerror = err => {
+        console.error("文件读取出错:", err);
+        showToast("图片读取失败");
+    };
+    reader.readAsDataURL(file);
+    event.target.value = "";
+};
+
+// ---------- 每日一言 ----------
+function formatQuoteSource(data) {
+    const from = data.from ? `《${data.from}》` : "未知出处";
+    return data.from_who ? `${data.from_who} · ${from}` : from;
+}
+
+async function fetchDailyQuote() {
+    if (!quoteEnabled) return;
+
+    dailyQuoteText.textContent = "正在加载每日一言...";
+    dailyQuoteFrom.textContent = "一言 Hitokoto";
+
+    try {
+        const res = await fetch("https://v1.hitokoto.cn/?encode=json");
+        if (!res.ok) throw new Error("quote request failed");
+        const data = await res.json();
+        dailyQuoteText.textContent = data.hitokoto || "今天也要好好生活。";
+        dailyQuoteFrom.textContent = formatQuoteSource(data);
+    } catch (error) {
+        console.error(error);
+        dailyQuoteText.textContent = "今天也要好好生活。";
+        dailyQuoteFrom.textContent = "本地默认";
+        showToast("每日一言暂时获取失败");
+    }
+}
+
+function applyQuoteVisibility() {
+    quoteToggle.checked = quoteEnabled;
+    dailyQuoteBox.classList.toggle("hidden", !quoteEnabled);
+    if (quoteEnabled && dailyQuoteText.textContent === "正在加载每日一言...") {
+        fetchDailyQuote();
+    }
+}
+
+quoteToggle.onchange = () => {
+    quoteEnabled = quoteToggle.checked;
+    localStorage.setItem("quoteEnabled", String(quoteEnabled));
+    applyQuoteVisibility();
+    showToast(quoteEnabled ? "每日一言已开启" : "每日一言已关闭");
+};
+
+refreshQuoteBtn.onclick = event => {
+    event.stopPropagation();
+    fetchDailyQuote();
+};
+
+// ---------- 搜索 ----------
+function normalizeEngineUrl(url) {
+    const trimmed = url.trim();
+    if (!trimmed) return "";
+    const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+    return withProtocol.includes("%s")
+        ? withProtocol
+        : `${withProtocol}${withProtocol.includes("?") ? "&" : "?"}q=%s`;
+}
+
+function looksLikeUrl(text) {
+    return /^(https?:\/\/|localhost(:\d+)?(\/|$)|[\w-]+\.[\w.-]{2,})(\S*)$/i.test(text);
+}
+
+function buildSearchUrl(term) {
+    if (looksLikeUrl(term)) {
+        if (/^https?:\/\//i.test(term) || /^localhost/i.test(term)) return term;
+        return `https://${term}`;
+    }
+
+    const template = engines[currentEngine];
+    if (!template) return null;
+    return template.replace("%s", encodeURIComponent(term));
+}
+
+function refreshCurrentEngineBtn() {
+    currentEngineBtn.textContent = currentEngine;
+    currentEngineBtn.title = `当前搜索引擎：${currentEngine}`;
+}
+
+function setCurrentEngine(name) {
+    if (!engines[name]) return;
+    currentEngine = name;
+    localStorage.setItem("currentEngine", currentEngine);
+    refreshCurrentEngineBtn();
+    refreshEngineList();
+    renderEnginePopup();
+}
+
+function doSearch() {
+    const searchTerm = searchInput.value.trim();
+    if (!searchTerm) {
+        nudgeSearchBox("先输入一点内容");
+        return;
+    }
+
+    const url = buildSearchUrl(searchTerm);
+    if (!url) {
+        nudgeSearchBox("当前搜索引擎不可用，请重新选择");
+        return;
+    }
+
+    localStorage.setItem("lastSearchText", searchTerm);
+    window.location.href = url;
 }
 
 searchBtn.onclick = doSearch;
-searchInput.onkeydown = e => { 
-    if(e.key === "Enter") {
-        e.preventDefault(); // 阻止表单默认提交行为
-        doSearch(); 
+searchInput.onkeydown = event => {
+    if (event.key === "Enter") {
+        event.preventDefault();
+        doSearch();
     }
-};
-
-// 添加输入框焦点处理，方便用户看到输入状态
-searchInput.onfocus = () => {
-    console.log("搜索框获得焦点");
-};
-
-searchInput.onblur = () => {
-    console.log("搜索框失去焦点");
-};
-
-// 为搜索输入框添加专门的点击事件处理程序
-searchInput.onclick = (e) => {
-    // 阻止事件冒泡到父级搜索框元素，避免触发拖拽
-    e.stopPropagation();
-};
-
-// ---------- 弹窗选择搜索引擎 ----------
-// 点击当前搜索引擎按钮时显示搜索引擎选择弹窗
-currentEngineBtn.onclick = ()=>{
-    popupEngineList.innerHTML="";
-    Object.keys(engines).forEach(name=>{
-        const btn = document.createElement("button");
-        btn.textContent = name;
-        // 点击切换搜索引擎
-        btn.onclick = ()=>{
-            currentEngine=name;
-            localStorage.setItem("currentEngine",currentEngine);
-            refreshCurrentEngineBtn();
-            enginePopup.classList.remove("show");
-        };
-        // 长按删除搜索引擎
-        let timer=null;
-        btn.onmousedown = ()=>{ timer=setTimeout(()=>{
-            // 使用自定义确认弹窗替代浏览器默认confirm
-            engineToDelete = { name: name, button: btn };
-            document.querySelector('.confirm-message').textContent = `确认删除 ${name} 吗？`;
-            confirmPopup.classList.add("show");
-        },800); };
-        btn.onmouseup=btn.onmouseleave=()=>{ clearTimeout(timer); };
-        popupEngineList.appendChild(btn);
-    });
-    enginePopup.classList.add("show");
-};
-popupClose.onclick = ()=>enginePopup.classList.remove("show");
-
-// ---------- 删除确认弹窗处理 ----------
-// 取消删除操作
-cancelDeleteBtn.onclick = () => {
-    confirmPopup.classList.remove("show");
-    engineToDelete = null;
-};
-
-// 确认删除操作
-confirmDeleteBtn.onclick = () => {
-    if (engineToDelete) {
-        const name = engineToDelete.name;
-        const btn = engineToDelete.button;
-        
-        delete engines[name];
-        localStorage.setItem("engines", JSON.stringify(engines));
-        
-        // 更新设置面板中的引擎列表
-        refreshEngineList();
-        
-        // 如果删除的是当前引擎，则切换到第一个引擎
-        if (currentEngine === name) {
-            currentEngine = Object.keys(engines)[0] || "百度";
-            localStorage.setItem("currentEngine", currentEngine);
-            refreshCurrentEngineBtn();
-        }
-        
-        // 从弹窗中移除按钮
-        if (btn.parentNode) {
-            btn.parentNode.removeChild(btn);
-        }
-        
-        confirmPopup.classList.remove("show");
-        engineToDelete = null;
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        searchInput.select();
     }
+    if (event.key === "Escape") searchInput.value = "";
 };
+searchInput.onclick = event => event.stopPropagation();
 
-// ---------- 设置面板搜索引擎管理 ----------
-const engineList = document.getElementById("engineList");
-
-/**
- * 刷新设置面板中的搜索引擎列表
- */
-function refreshEngineList(){
-    engineList.innerHTML="";
-    Object.keys(engines).forEach(name=>{
-        const btn=document.createElement("button");
-        btn.textContent=name;
-        btn.className = "glass-button"; // 添加玻璃效果类名
-        let timer=null;
-        btn.onmousedown = ()=>{ timer=setTimeout(()=>{
-            // 使用自定义确认弹窗替代浏览器默认confirm
-            engineToDelete = { name: name, button: btn };
-            document.querySelector('.confirm-message').textContent = `确认删除 ${name} 吗？`;
-            confirmPopup.classList.add("show");
-        },800);}
-        btn.onmouseup=btn.onmouseleave=()=>{ clearTimeout(timer); };
-        engineList.appendChild(btn);
-    });
-}
-refreshEngineList();
-
-// 添加自定义搜索引擎
-document.getElementById("addEngineBtn").onclick = ()=>{
-    const name=document.getElementById("customName").value.trim();
-    const url=document.getElementById("customUrl").value.trim();
-    if(!name||!url) return;
-    engines[name]=url;
-    localStorage.setItem("engines",JSON.stringify(engines));
-    refreshEngineList();
-};
-
-// ---------- 背景 ----------
-/**
- * 获取并设置每日一图作为背景
- */
-async function fetchDailyBg(){
-    try{
-        const res=await fetch("https://t.alcy.cc/ycy");
-        if(res.ok){
-            const url=await res.text();
-            document.body.style.setProperty("--bg",`url(${url})`);
-            // 保存背景以便在新标签页中恢复
-            localStorage.setItem('customBackground', url);
-            // 更新预览
-            updateCurrentBgPreview();
-        }
-    }catch(e){ console.error(e); }
-}
-fetchDailyBg();
-
-// 页面加载时尝试恢复保存的背景
-document.addEventListener('DOMContentLoaded', () => {
-    const savedBg = localStorage.getItem('customBackground');
-    if (savedBg) {
-        document.body.style.setProperty("--bg", `url(${savedBg})`);
-    }
-    // 初始化预览
-    updateCurrentBgPreview();
-    
-    // 恢复搜索框位置
-    const savedPos = localStorage.getItem('searchBoxPosition');
-    if (savedPos) {
-        const pos = JSON.parse(savedPos);
-        searchBox.style.top = pos.top;
-        searchBox.style.left = pos.left;
-    } else {
-        searchBox.style.top = "40%";
-        searchBox.style.left = "50%";
+document.addEventListener("keydown", event => {
+    const isTyping = ["INPUT", "TEXTAREA"].includes(document.activeElement?.tagName);
+    if (!isTyping && event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        searchInput.focus();
     }
 });
 
-// 上传背景图片
-const uploadInput=document.getElementById("uploadBgInput");
-uploadInput.onchange=e=>{
-    const file=e.target.files[0];
-    if(!file) return;
-    
-    // 检查文件类型
-    if(!file.type.match('image.*')) {
-        console.error('请选择图片文件');
-        return;
-    }
-    
-    const reader=new FileReader();
-    reader.onload=function(evt) {
-        const result = evt.target.result;
-        document.body.style.setProperty("--bg",`url(${result})`);
-        // 保存背景以便在新标签页中恢复
-        localStorage.setItem('customBackground', result);
-        // 更新预览
-        updateCurrentBgPreview();
-    };
-    reader.onerror = function(err) {
-        console.error('文件读取出错:', err);
-    };
-    reader.readAsDataURL(file);
-    // 清空input值，确保可以重复上传同一张图片
-    e.target.value = '';
+// ---------- 搜索引擎弹窗 ----------
+function renderEnginePopup() {
+    popupEngineList.innerHTML = "";
+    Object.keys(engines).forEach(name => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.classList.toggle("active-engine", name === currentEngine);
+        btn.innerHTML = `<span>${name}</span><span>${name === currentEngine ? "当前" : "切换"}</span>`;
+        btn.onclick = () => {
+            setCurrentEngine(name);
+            enginePopup.classList.remove("show");
+            if (!settingsPanel.classList.contains("show")) setOverlay(false);
+            showToast(`已切换到 ${name}`);
+        };
+        popupEngineList.appendChild(btn);
+    });
+}
+
+function positionEnginePopup() {
+    const rect = searchBox.getBoundingClientRect();
+    enginePopup.style.top = `${Math.min(window.innerHeight - 20, rect.bottom + 12)}px`;
+    enginePopup.style.left = `${rect.left + rect.width / 2}px`;
+}
+
+currentEngineBtn.onclick = event => {
+    event.stopPropagation();
+    renderEnginePopup();
+    positionEnginePopup();
+    enginePopup.classList.toggle("show");
+    setOverlay(enginePopup.classList.contains("show") || settingsPanel.classList.contains("show"));
 };
 
-// ---------- 搜索框垂直拖拽 ----------
-// 实现搜索框的拖拽功能
-let offsetY=0;
-searchBox.addEventListener("mousedown",e=>{
-    // 如果点击的是输入框或按钮，不执行拖拽
-    if (e.target === searchInput || e.target === searchBtn || e.target === currentEngineBtn) {
+popupClose.onclick = () => {
+    enginePopup.classList.remove("show");
+    if (!settingsPanel.classList.contains("show")) setOverlay(false);
+};
+
+// ---------- 删除确认 ----------
+function askDeleteEngine(name) {
+    if (Object.keys(engines).length <= 1) {
+        showToast("至少保留一个搜索引擎");
         return;
     }
-    
-    e.preventDefault();
-    offsetY=e.clientY-searchBox.getBoundingClientRect().top;
-    function move(e){
-        let newTop=e.clientY-offsetY;
-        newTop=Math.max(0,Math.min(window.innerHeight-searchBox.offsetHeight,newTop));
-        searchBox.style.top=newTop+"px";
-        searchBox.style.left="50%";
-        
-        // 保存位置
-        localStorage.setItem('searchBoxPosition', JSON.stringify({
-            top: searchBox.style.top,
-            left: searchBox.style.left
-        }));
+    engineToDelete = name;
+    document.querySelector(".confirm-message").textContent = `确认删除 ${name} 吗？`;
+    confirmPopup.classList.add("show");
+    setOverlay(true);
+}
+
+cancelDeleteBtn.onclick = () => {
+    confirmPopup.classList.remove("show");
+    engineToDelete = null;
+    setOverlay(settingsPanel.classList.contains("show") || enginePopup.classList.contains("show"));
+};
+
+confirmDeleteBtn.onclick = () => {
+    if (!engineToDelete) return;
+    delete engines[engineToDelete];
+    localStorage.setItem("engines", JSON.stringify(engines));
+    if (currentEngine === engineToDelete) setCurrentEngine(Object.keys(engines)[0]);
+    refreshEngineList();
+    renderEnginePopup();
+    showToast("搜索引擎已删除");
+    confirmPopup.classList.remove("show");
+    engineToDelete = null;
+    setOverlay(settingsPanel.classList.contains("show") || enginePopup.classList.contains("show"));
+};
+
+// ---------- 设置面板搜索引擎管理 ----------
+function refreshEngineList() {
+    engineList.innerHTML = "";
+    Object.keys(engines).forEach(name => {
+        const row = document.createElement("div");
+        row.className = `glass-button engine-row${name === currentEngine ? " active-engine" : ""}`;
+
+        const label = document.createElement("span");
+        label.textContent = name;
+
+        const actions = document.createElement("span");
+        actions.className = "engine-actions";
+
+        const useBtn = document.createElement("button");
+        useBtn.type = "button";
+        useBtn.className = "mini-button";
+        useBtn.textContent = name === currentEngine ? "当前" : "设为默认";
+        useBtn.disabled = name === currentEngine;
+        useBtn.onclick = event => {
+            event.stopPropagation();
+            setCurrentEngine(name);
+            showToast(`默认引擎已设为 ${name}`);
+        };
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.type = "button";
+        deleteBtn.className = "mini-button delete-button";
+        deleteBtn.textContent = "删除";
+        deleteBtn.onclick = event => {
+            event.stopPropagation();
+            askDeleteEngine(name);
+        };
+
+        actions.append(useBtn, deleteBtn);
+        row.append(label, actions);
+        row.onclick = () => setCurrentEngine(name);
+        engineList.appendChild(row);
+    });
+}
+
+addEngineBtn.onclick = () => {
+    const name = customName.value.trim();
+    const url = normalizeEngineUrl(customUrl.value);
+
+    if (!name) {
+        showToast("给引擎起个名字");
+        customName.focus();
+        return;
     }
-    function up(){
-        document.removeEventListener("mousemove",move);
-        document.removeEventListener("mouseup",up);
+    if (!url) {
+        showToast("填一下搜索链接");
+        customUrl.focus();
+        return;
     }
-    document.addEventListener("mousemove",move);
-    document.addEventListener("mouseup",up);
+
+    engines[name] = url;
+    localStorage.setItem("engines", JSON.stringify(engines));
+    setCurrentEngine(name);
+    customName.value = "";
+    customUrl.value = "";
+    defaultGroupContent.classList.remove("collapsed");
+    defaultGroupHeader.querySelector(".toggle-icon").classList.add("rotated");
+    showToast("搜索引擎已添加");
+};
+
+// ---------- 搜索框拖拽 ----------
+let offsetY = 0;
+searchBox.addEventListener("mousedown", event => {
+    if ([searchInput, searchBtn, currentEngineBtn].includes(event.target)) return;
+
+    event.preventDefault();
+    searchBox.classList.add("dragging");
+    offsetY = event.clientY - searchBox.getBoundingClientRect().top;
+
+    function move(moveEvent) {
+        const newTop = Math.max(12, Math.min(window.innerHeight - searchBox.offsetHeight - 12, moveEvent.clientY - offsetY));
+        searchBox.style.top = `${newTop}px`;
+        searchBox.style.left = "50%";
+        localStorage.setItem("searchBoxPosition", JSON.stringify({ top: searchBox.style.top, left: searchBox.style.left }));
+        if (enginePopup.classList.contains("show")) positionEnginePopup();
+    }
+
+    function up() {
+        searchBox.classList.remove("dragging");
+        document.removeEventListener("mousemove", move);
+        document.removeEventListener("mouseup", up);
+    }
+
+    document.addEventListener("mousemove", move);
+    document.addEventListener("mouseup", up);
+});
+
+let quoteOffsetY = 0;
+dailyQuoteBox.addEventListener("mousedown", event => {
+    if (event.target === refreshQuoteBtn || !quoteEnabled) return;
+
+    event.preventDefault();
+    dailyQuoteBox.classList.add("dragging");
+    quoteOffsetY = event.clientY - dailyQuoteBox.getBoundingClientRect().top;
+
+    function move(moveEvent) {
+        const newTop = Math.max(12, Math.min(window.innerHeight - dailyQuoteBox.offsetHeight - 12, moveEvent.clientY - quoteOffsetY));
+        dailyQuoteBox.style.top = `${newTop}px`;
+        dailyQuoteBox.style.bottom = "auto";
+        dailyQuoteBox.style.left = "50%";
+        localStorage.setItem("dailyQuotePosition", JSON.stringify({ top: dailyQuoteBox.style.top, left: "50%" }));
+    }
+
+    function up() {
+        dailyQuoteBox.classList.remove("dragging");
+        document.removeEventListener("mousemove", move);
+        document.removeEventListener("mouseup", up);
+    }
+
+    document.addEventListener("mousemove", move);
+    document.addEventListener("mouseup", up);
+});
+
+// ---------- 初始化 ----------
+document.addEventListener("DOMContentLoaded", () => {
+    localStorage.removeItem("customBackground");
+    const savedBg = localStorage.getItem("uploadedBackground");
+    if (savedBg) setBackground(savedBg);
+    updateCurrentBgPreview();
+
+    const savedPos = readJson("searchBoxPosition", null);
+    if (savedPos?.top) {
+        searchBox.style.top = savedPos.top;
+        searchBox.style.left = savedPos.left || "50%";
+    }
+
+    const savedQuotePos = readJson("dailyQuotePosition", null);
+    if (savedQuotePos?.top) {
+        dailyQuoteBox.style.top = savedQuotePos.top;
+        dailyQuoteBox.style.bottom = "auto";
+        dailyQuoteBox.style.left = "50%";
+    }
+
+    const lastSearchText = localStorage.getItem("lastSearchText");
+    if (lastSearchText) searchInput.value = lastSearchText;
+
+    applySettingsView(activeCategory, activeSubcategory);
+    refreshCurrentEngineBtn();
+    refreshEngineList();
+    renderEnginePopup();
+    applyQuoteVisibility();
 });

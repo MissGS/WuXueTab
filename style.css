@@ -5,7 +5,8 @@ body {
     margin: 0;
     width: 100%;
     height: 100vh;
-    background: var(--bg, #222);
+    background-color: #222;
+    background-image: var(--bg, none);
     background-size: cover;
     background-position: center;
     font-family: "Microsoft YaHei", sans-serif;
@@ -597,4 +598,437 @@ button {
 
 .toggle-icon.rotated {
     transform: rotate(180deg);
+}
+
+/* ---------- 体验优化：更丝滑的动效和毛玻璃 ---------- */
+:root {
+    --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-pop: cubic-bezier(0.2, 1.2, 0.22, 1);
+    --glass-bg: rgba(255, 255, 255, 0.28);
+    --glass-bg-strong: rgba(255, 255, 255, 0.42);
+    --glass-border: rgba(255, 255, 255, 0.5);
+    --glass-shadow: 0 18px 60px rgba(0, 0, 0, 0.18);
+}
+
+body {
+    transition: background-image 0.45s var(--ease-smooth), filter 0.45s var(--ease-smooth);
+}
+
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)),
+        rgba(0, 0, 0, 0.08);
+    pointer-events: none;
+    z-index: 0;
+}
+
+#overlay {
+    display: block;
+    opacity: 0;
+    pointer-events: none;
+    backdrop-filter: blur(0) saturate(120%);
+    -webkit-backdrop-filter: blur(0) saturate(120%);
+    background: rgba(10, 14, 18, 0);
+    transition: opacity 0.36s var(--ease-smooth), backdrop-filter 0.36s var(--ease-smooth), background 0.36s var(--ease-smooth);
+}
+
+#overlay.show {
+    opacity: 1;
+    pointer-events: auto;
+    backdrop-filter: blur(18px) saturate(145%);
+    -webkit-backdrop-filter: blur(18px) saturate(145%);
+    background: rgba(10, 14, 18, 0.22);
+}
+
+#settingsBtn,
+#searchBox,
+#dailyQuoteBox,
+#settingsPanel,
+#enginePopup,
+#confirmPopup {
+    border: 1px solid var(--glass-border);
+    background: var(--glass-bg);
+    box-shadow: var(--glass-shadow);
+    backdrop-filter: blur(24px) saturate(160%);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+}
+
+#settingsBtn {
+    transition: transform 0.28s var(--ease-pop), background 0.28s var(--ease-smooth), box-shadow 0.28s var(--ease-smooth);
+}
+
+#settingsBtn:hover {
+    transform: translateY(-1px) scale(1.08) rotate(18deg);
+}
+
+#settingsPanel {
+    width: min(840px, calc(100vw - 36px));
+    height: min(540px, calc(100vh - 48px));
+    transform: translate(-50%, -47%) scale(0.94);
+    filter: blur(8px);
+    transition: opacity 0.34s var(--ease-smooth), transform 0.34s var(--ease-pop), filter 0.34s var(--ease-smooth);
+}
+
+#settingsPanel.show {
+    transform: translate(-50%, -50%) scale(1);
+    filter: blur(0);
+}
+
+.settings-header,
+.category-column,
+.subcategory-column {
+    background: rgba(255, 255, 255, 0.14);
+}
+
+.capsule-item,
+#currentEngineBtn,
+#searchBtn,
+.glass-button,
+.custom-upload-btn,
+#engineList button,
+#popupEngineList button,
+.group-header,
+.confirm-buttons button,
+#closeSettings,
+#popupClose {
+    transition: transform 0.24s var(--ease-pop), background 0.24s var(--ease-smooth), box-shadow 0.24s var(--ease-smooth), color 0.24s var(--ease-smooth);
+}
+
+.capsule-item:hover,
+#engineList button:hover,
+#popupEngineList button:hover,
+.group-header:hover {
+    transform: translateY(-1px);
+}
+
+.capsule-item.active,
+#popupEngineList button.active-engine,
+#engineList button.active-engine {
+    background: rgba(255, 255, 255, 0.62);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.function-content {
+    opacity: 0;
+    transform: translateY(8px);
+}
+
+.function-content.active {
+    animation: contentIn 0.28s var(--ease-smooth) forwards;
+}
+
+@keyframes contentIn {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#searchBox {
+    gap: 12px;
+    padding: 13px;
+    border-radius: 22px;
+    transition: transform 0.3s var(--ease-pop), background 0.3s var(--ease-smooth), box-shadow 0.3s var(--ease-smooth), border-color 0.3s var(--ease-smooth);
+}
+
+#searchBox:hover,
+#searchBox:focus-within {
+    background: var(--glass-bg-strong);
+    border-color: rgba(255, 255, 255, 0.72);
+    box-shadow: 0 22px 70px rgba(0, 0, 0, 0.22);
+}
+
+#searchBox.dragging {
+    transition: none;
+    cursor: grabbing;
+}
+
+#searchBox.shake {
+    animation: shake 0.28s var(--ease-smooth);
+}
+
+@keyframes shake {
+    25% { transform: translate(calc(-50% - 5px), 0); }
+    50% { transform: translate(calc(-50% + 5px), 0); }
+    75% { transform: translate(calc(-50% - 3px), 0); }
+}
+
+#searchInput {
+    width: min(34vw, 300px);
+    min-width: 220px;
+    height: 38px;
+    box-sizing: border-box;
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    background: rgba(255, 255, 255, 0.5);
+    transition: width 0.3s var(--ease-smooth), background 0.24s var(--ease-smooth), border-color 0.24s var(--ease-smooth), box-shadow 0.24s var(--ease-smooth);
+}
+
+#searchInput:focus {
+    width: min(42vw, 380px);
+    background: rgba(255, 255, 255, 0.72);
+    border-color: rgba(255, 255, 255, 0.9);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), 0 0 0 4px rgba(255, 255, 255, 0.16);
+}
+
+#searchBtn,
+.glass-button,
+.custom-upload-btn,
+.confirm-buttons button {
+    background: rgba(18, 24, 32, 0.72);
+}
+
+#searchBtn:hover,
+.glass-button:hover,
+.custom-upload-btn:hover,
+.confirm-buttons button:hover {
+    background: rgba(18, 24, 32, 0.88);
+    transform: translateY(-1px);
+}
+
+#enginePopup {
+    top: calc(40% + 72px);
+    width: 320px;
+    transform: translate(-50%, -8px) scale(0.96);
+    filter: blur(6px);
+    transition: opacity 0.26s var(--ease-smooth), transform 0.26s var(--ease-pop), filter 0.26s var(--ease-smooth);
+}
+
+#enginePopup.show {
+    transform: translate(-50%, 0) scale(1);
+    filter: blur(0);
+}
+
+#popupEngineList button,
+#engineList .engine-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.engine-row .engine-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.mini-button {
+    width: auto !important;
+    margin-top: 0 !important;
+    padding: 6px 9px !important;
+    border-radius: 12px !important;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.delete-button {
+    background: rgba(150, 38, 38, 0.7) !important;
+    color: #fff !important;
+}
+
+.delete-button:hover {
+    background: rgba(170, 44, 44, 0.88) !important;
+}
+
+.image-preview {
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    transition: transform 0.28s var(--ease-pop), box-shadow 0.28s var(--ease-smooth), filter 0.28s var(--ease-smooth);
+}
+
+.image-preview:hover {
+    filter: saturate(1.08);
+}
+
+.group-content {
+    transition: max-height 0.34s var(--ease-smooth), opacity 0.28s var(--ease-smooth);
+    opacity: 1;
+}
+
+.group-content.collapsed {
+    opacity: 0;
+}
+
+#toast {
+    position: fixed;
+    left: 50%;
+    top: calc(40% + 78px);
+    transform: translate(-50%, -8px);
+    padding: 9px 14px;
+    border-radius: 999px;
+    color: #111;
+    background: rgba(255, 255, 255, 0.78);
+    border: 1px solid rgba(255, 255, 255, 0.82);
+    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.16);
+    backdrop-filter: blur(18px) saturate(150%);
+    -webkit-backdrop-filter: blur(18px) saturate(150%);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 1200;
+    transition: opacity 0.25s var(--ease-smooth), transform 0.25s var(--ease-pop);
+    font-size: 14px;
+}
+
+#toast.show {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
+#dailyQuoteBox {
+    position: fixed;
+    left: 50%;
+    bottom: 42px;
+    transform: translateX(-50%);
+    width: min(620px, calc(100vw - 44px));
+    box-sizing: border-box;
+    padding: 16px 18px 14px;
+    border-radius: 22px;
+    color: #111;
+    z-index: 450;
+    cursor: grab;
+    user-select: none;
+    opacity: 1;
+    transition: opacity 0.3s var(--ease-smooth), transform 0.3s var(--ease-pop), background 0.3s var(--ease-smooth), box-shadow 0.3s var(--ease-smooth);
+}
+
+#dailyQuoteBox:hover {
+    background: var(--glass-bg-strong);
+    box-shadow: 0 22px 70px rgba(0, 0, 0, 0.22);
+}
+
+#dailyQuoteBox.dragging {
+    cursor: grabbing;
+    transition: none;
+}
+
+#dailyQuoteBox.hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(-50%) translateY(10px) scale(0.98);
+}
+
+#dailyQuoteText {
+    font-size: 15px;
+    line-height: 1.7;
+    text-align: center;
+    word-break: break-word;
+}
+
+.quote-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 10px;
+    color: rgba(0, 0, 0, 0.62);
+    font-size: 12px;
+}
+
+#refreshQuoteBtn {
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.42);
+    color: #111;
+    cursor: pointer;
+    transition: transform 0.24s var(--ease-pop), background 0.24s var(--ease-smooth);
+}
+
+#refreshQuoteBtn:hover {
+    transform: translateY(-1px);
+    background: rgba(255, 255, 255, 0.68);
+}
+
+.setting-switch {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 16px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.28);
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    color: #111;
+}
+
+.setting-switch span {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.setting-switch small {
+    color: rgba(0, 0, 0, 0.58);
+}
+
+.setting-switch input {
+    appearance: none;
+    flex: 0 0 auto;
+    width: 48px;
+    height: 28px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.25);
+    position: relative;
+    cursor: pointer;
+    transition: background 0.24s var(--ease-smooth);
+}
+
+.setting-switch input::before {
+    content: "";
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    top: 3px;
+    left: 3px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.22);
+    transition: transform 0.24s var(--ease-pop);
+}
+
+.setting-switch input:checked {
+    background: rgba(18, 24, 32, 0.76);
+}
+
+.setting-switch input:checked::before {
+    transform: translateX(20px);
+}
+
+@media (max-width: 720px) {
+    #searchBox {
+        width: calc(100vw - 36px);
+        box-sizing: border-box;
+        flex-wrap: wrap;
+    }
+
+    #searchInput,
+    #searchInput:focus {
+        width: 100%;
+        min-width: 0;
+        order: 3;
+    }
+
+    #dailyQuoteBox {
+        bottom: 24px;
+        padding: 14px;
+    }
+
+    .settings-content {
+        flex-direction: column;
+    }
+
+    .category-column,
+    .subcategory-column {
+        width: auto;
+        display: flex;
+        overflow-x: auto;
+        border-right: 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        padding: 8px;
+    }
+
+    .capsule-item {
+        white-space: nowrap;
+        padding: 10px 14px;
+    }
 }

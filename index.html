@@ -39,9 +39,19 @@
 <!-- 搜索框 -->
 <div id="searchBox">
     <div id="currentEngineBtn" class="engine-btn"></div>
-    <input id="searchInput" type="text" placeholder="搜索...">
+    <input id="searchInput" type="text" placeholder="搜索关键词或输入网址" autocomplete="off" spellcheck="false">
     <button id="searchBtn">搜索</button>
 </div>
+
+<!-- 每日一言 -->
+<div id="dailyQuoteBox">
+    <div id="dailyQuoteText">正在加载每日一言...</div>
+    <div class="quote-footer">
+        <span id="dailyQuoteFrom">一言 Hitokoto</span>
+        <button id="refreshQuoteBtn" type="button">换一句</button>
+    </div>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
 
 <!-- 设置面板 -->
 <div id="settingsPanel">
@@ -63,6 +73,7 @@
             <div class="subcategory-item active capsule-item" data-subcategory="background-options" data-category="background">背景选项</div>
             <div class="subcategory-item capsule-item" data-subcategory="background-manage" data-category="background">背景管理</div>
             <div class="subcategory-item capsule-item" data-subcategory="search-engine" data-category="search">搜索引擎管理</div>
+            <div class="subcategory-item capsule-item" data-subcategory="other-settings" data-category="other">通用</div>
         </div>
         
         <!-- 右侧功能区 -->
@@ -103,15 +114,21 @@
                         <div id="engineList"></div>
                     </div>
                 </div>
-                <input id="customName" placeholder="自定义名称" class="glass-input">
-                <input id="customUrl" placeholder="搜索链接" class="glass-input">
+                <input id="customName" placeholder="自定义名称" class="glass-input" autocomplete="off">
+                <input id="customUrl" placeholder="搜索链接，例如 https://example.com/search?q=%s" class="glass-input" autocomplete="off">
                 <button id="addEngineBtn" class="glass-button">添加引擎</button>
             </div>
             
             <!-- 其他设置功能区 -->
             <div id="other-settings" class="function-content">
                 <div class="section-title">其他设置</div>
-                <p>暂无设置</p>
+                <label class="setting-switch">
+                    <span>
+                        <strong>每日一言</strong>
+                        <small>在底部显示一句随机语句，可上下拖拽</small>
+                    </span>
+                    <input id="quoteToggle" type="checkbox">
+                </label>
             </div>
         </div>
     </div>
